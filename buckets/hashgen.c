@@ -5,17 +5,22 @@
 #include <math.h>
 #include <stdbool.h>
 #include "common.c"
+#include "blake3.h"
 
 bool DEBUG = false;
+blake3_hasher hasher;
 
 // Function to generate a random 8-byte array
 void generateRandomByteArray(unsigned char result[HASH_SIZE])
 {
-
-    for (int i = 0; i < HASH_SIZE; i++)
+    char random_data[8];
+    for (size_t j = 0; j < HASH_SIZE; j++)
     {
-        result[i] = rand() % 256; // Generate a random byte (0-255)
+        random_data[j] = rand() % 256;
     }
+
+    blake3_hasher_update(&hasher, random_data, HASH_SIZE);
+    blake3_hasher_finalize(&hasher, result, HASH_SIZE);
 }
 
 // Function to convert a 12-byte array to an integer
@@ -34,6 +39,7 @@ unsigned int byteArrayToInt(unsigned char byteArray[HASH_SIZE], int startIndex)
 int main()
 {
     srand((unsigned int)time(NULL)); 
+    blake3_hasher_init(&hasher);
 
     clock_t start_time = clock();
 
