@@ -62,5 +62,5 @@ To perform binary search run,
 
 To perform normal searching run,
 ```
-./psort
+./search
 ```
