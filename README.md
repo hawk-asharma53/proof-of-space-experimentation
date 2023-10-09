@@ -1,6 +1,6 @@
 # proof-of-space-experimentation
 
-Experiment - https://docs.google.com/spreadsheets/d/1rC3Hw5eIk5FdgjtKiqmmEBE9X27FKG7A/edit#gid=297450551
+Experiments - https://docs.google.com/spreadsheets/d/1rC3Hw5eIk5FdgjtKiqmmEBE9X27FKG7A/edit#gid=297450551
 
 # FILES 
 
