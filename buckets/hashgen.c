@@ -5,17 +5,22 @@
 #include <math.h>
 #include <stdbool.h>
 #include "common.c"
+#include "blake3.h"
 
 bool DEBUG = false;
+blake3_hasher hasher;
 
 // Function to generate a random 8-byte array
 void generateRandomByteArray(unsigned char result[HASH_SIZE])
 {
-
-    for (int i = 0; i < HASH_SIZE; i++)
+    char random_data[8];
+    for (size_t j = 0; j < HASH_SIZE; j++)
     {
-        result[i] = rand() % 256; // Generate a random byte (0-255)
+        random_data[j] = rand() % 256;
     }
+
+    blake3_hasher_update(&hasher, random_data, HASH_SIZE);
+    blake3_hasher_finalize(&hasher, result, HASH_SIZE);
 }
 
 // Function to convert a 12-byte array to an integer
@@ -34,8 +39,9 @@ unsigned int byteArrayToInt(unsigned char byteArray[HASH_SIZE], int startIndex)
 int main()
 {
     srand((unsigned int)time(NULL)); 
+    blake3_hasher_init(&hasher);
 
-    // clock_t start_time = clock();
+    clock_t start_time = clock();
 
     printf("fopen()...\n");
     FILE *file = fopen("plot.memo", "wb"); // Open for appending
@@ -44,7 +50,6 @@ int main()
         perror("Error opening file");
         return 1;
     }
-    // setbuf(file, NULL);
 
     long int NONCE = 0;
     printf("NUM_BUCKETS=%zu\n", NUM_BUCKETS);
@@ -154,7 +159,7 @@ int main()
         // bucket is full, should write to disk
         if (bucketIndex[prefix] == HASHES_PER_BUCKET)
         {
-            clock_t start_write = clock();
+clock_t start_write = clock();
 
             if (DEBUG)
                 printf("bucket is full...\n");
@@ -188,8 +193,6 @@ int main()
             if (DEBUG)
                 printf("updating bucketFlush and bucketIndex...\n");
 
-            fflush(file);
-
             totalFlushes++;
             bucketFlush[prefix]++;
             bucketIndex[prefix] = 0;
@@ -200,7 +203,6 @@ int main()
             if ( (int)(totalFlushes % 1024) == 0 ) {
                 printf("Flushed : %zu\n", totalFlushes);
             }
-
         }
     }
 
@@ -209,7 +211,7 @@ int main()
     for (size_t i = 0; i < NUM_BUCKETS; i++)
     {
         if ( bucketFlush[i] < (HASHES_PER_BUCKET_READ / HASHES_PER_BUCKET) ) {
-            clock_t start_write = clock();
+clock_t start_write = clock();
 
             long write_location = i * (HASHES_PER_BUCKET_READ * sizeof(struct hashObject)) + bucketFlush[i] * bytes_to_write;
             if (fseeko(file, write_location, SEEK_SET) != 0)
