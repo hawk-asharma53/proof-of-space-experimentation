@@ -41,8 +41,6 @@ int main()
     srand((unsigned int)time(NULL)); 
     blake3_hasher_init(&hasher);
 
-    clock_t start_time = clock();
-
     printf("fopen()...\n");
     FILE *file = fopen("plot.memo", "wb"); // Open for appending
     if (file == NULL)
