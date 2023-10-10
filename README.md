@@ -1,5 +1,6 @@
 # proof-of-space-experimentation
 
+Experiments - https://docs.google.com/spreadsheets/d/1rC3Hw5eIk5FdgjtKiqmmEBE9X27FKG7A/edit#gid=297450551
 
 # FILES 
 
@@ -62,5 +63,5 @@ To perform binary search run,
 
 To perform normal searching run,
 ```
-./psort
+./search
 ```
