@@ -12,7 +12,7 @@ struct hashObject
 
 const size_t NUM_BUCKETS = 1 << (PREFIX_SIZE * 8);
 const size_t HASHES_PER_BUCKET = 256 * 1024; 
-const size_t HASHES_PER_BUCKET_READ = 256 * 256 * 8;
+const size_t HASHES_PER_BUCKET_READ = 256 * 256 * 4;
 
 const int SEARCH_COUNT = 1000;
 
