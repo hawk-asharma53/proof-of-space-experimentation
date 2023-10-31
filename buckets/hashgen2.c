@@ -41,7 +41,7 @@ int main()
 
     printf("fopen()...\n");
     // FILE *file = fopen("plot.memo", "wb"); // Open for appending
-    int file = open("plot.memo", O_WRONLY | O_CREAT | O_TRUNC, 0644); // Open for appending
+    int file = open("plot.memo", O_WRONLY | O_CREAT | O_TRUNC | __O_DIRECT, 0644); // Open for appending
     if (file == -1)
     {
         perror("Error opening file");
