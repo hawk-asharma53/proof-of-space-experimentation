@@ -2,7 +2,7 @@
 #include <math.h>
 
 #define HASH_SIZE 8
-#define PREFIX_SIZE 3
+#define PREFIX_SIZE 1
 
 struct hashObject
 {
@@ -10,9 +10,12 @@ struct hashObject
     long int value;
 };
 
+const size_t FILE_SIZE = 178;
+
 const size_t NUM_BUCKETS = 1 << (PREFIX_SIZE * 8);
 const size_t HASHES_PER_BUCKET = 256 * 1024 * 2; 
-const size_t HASHES_PER_BUCKET_READ = 256 * 256 * 32;
+const size_t HASHES_PER_BUCKET_READ = 256 * 256 * 256;
+const size_t FULL_BUCKET_SIZE = HASHES_PER_BUCKET_READ * 3;
 
 const int SEARCH_COUNT = 1000;
 
