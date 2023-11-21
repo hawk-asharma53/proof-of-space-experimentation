@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -8,17 +9,17 @@
 #include "blake3.h"
 
 bool DEBUG = false;
-blake3_hasher hasher;
 
 // Function to generate a random 8-byte array
 void generateRandomByteArray(unsigned char result[HASH_SIZE])
 {
-    char random_data[8];
+    char random_data[HASH_SIZE];
     for (size_t j = 0; j < HASH_SIZE; j++)
     {
         random_data[j] = rand() % 256;
     }
-
+    blake3_hasher hasher;
+    blake3_hasher_init(&hasher);
     blake3_hasher_update(&hasher, random_data, HASH_SIZE);
     blake3_hasher_finalize(&hasher, result, HASH_SIZE);
 }
@@ -39,7 +40,6 @@ unsigned int byteArrayToInt(unsigned char byteArray[HASH_SIZE], int startIndex)
 int main()
 {
     srand((unsigned int)time(NULL)); 
-    blake3_hasher_init(&hasher);
 
     printf("fopen()...\n");
     FILE *file = fopen("plot.memo", "wb"); // Open for appending
@@ -157,7 +157,7 @@ int main()
         // bucket is full, should write to disk
         if (bucketIndex[prefix] == HASHES_PER_BUCKET)
         {
-clock_t start_write = clock();
+            clock_t start_write = clock();
 
             if (DEBUG)
                 printf("bucket is full...\n");
@@ -227,7 +227,7 @@ clock_t start_write = clock();
                 return 1;
             }
 
-            fflush(file);
+            // fflush(file);
 
             totalFlushes++;
             bucketFlush[i]++;

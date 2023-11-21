@@ -75,7 +75,7 @@ int main() {
         return 1;
     }
 
-    struct hashObject *bucket = (struct hashObject *) malloc( HASHES_PER_BUCKET * sizeof(struct hashObject) );
+    struct hashObject *bucket = (struct hashObject *) malloc( FULL_BUCKET_SIZE * sizeof(struct hashObject) );
 
     for (int i = 0; i < SEARCH_COUNT; i++)
     // for (int i = 0; i < 1; i++)
@@ -89,7 +89,7 @@ int main() {
         }
 
         //STEP 2 : Seek to the position in file
-        size_t bucket_location = prefix * HASHES_PER_BUCKET * sizeof(struct hashObject);
+        size_t bucket_location = prefix * FULL_BUCKET_SIZE * sizeof(struct hashObject);
         if (fseeko(file, bucket_location, SEEK_SET) != 0)
         {
             perror("Error seeking in file");
@@ -101,8 +101,8 @@ int main() {
         }
 
         //STEP 3 : Read the bucket in memory
-        size_t bytesRead = fread(bucket, 1, HASHES_PER_BUCKET * sizeof(struct hashObject), file);
-        if (bytesRead != HASHES_PER_BUCKET * sizeof(struct hashObject))
+        size_t bytesRead = fread(bucket, 1, FULL_BUCKET_SIZE * sizeof(struct hashObject), file);
+        if (bytesRead != FULL_BUCKET_SIZE * sizeof(struct hashObject))
         {
             perror("Error reading file");
             fclose(file);
@@ -111,7 +111,7 @@ int main() {
 
         //STEP 4 : Loop through records to search
         bool found = false;
-        for (size_t j = 0; j < HASHES_PER_BUCKET; j++)
+        for (size_t j = 0; j < FULL_BUCKET_SIZE; j++)
         {
             if ( compare(bucket[j].byteArray, &array[i][PREFIX_SIZE], HASH_SIZE - PREFIX_SIZE) ) {
                 // printArray(bucket[j].byteArray, HASH_SIZE - PREFIX_SIZE);
