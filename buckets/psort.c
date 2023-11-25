@@ -139,7 +139,7 @@ int main() {
         writing_time += (double)elapsed / 1000000.0;
 
         if ( (i * NUM_THREADS ) % 16 == 0 )
-            printf("Buckets sorted : %zu\n", i*2);
+            printf("Buckets sorted : %zu\n", i*NUM_THREADS);
     }
 
     gettimeofday(&end_all, NULL);

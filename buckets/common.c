@@ -10,19 +10,23 @@ struct hashObject
     long int value;
 };
 
-const size_t FILE_SIZE = 178;
-
 const size_t NUM_BUCKETS = 1 << (PREFIX_SIZE * 8);
-const size_t HASHES_PER_BUCKET = 256 * 1024 * 2; 
-const size_t HASHES_PER_BUCKET_READ = 256 * 256 * 256;
-const size_t FULL_BUCKET_SIZE = HASHES_PER_BUCKET_READ * 3;
+const size_t HASHES_PER_BUCKET = 256; 
+const size_t HASHES_PER_BUCKET_READ = 256;
+const size_t FULL_BUCKET_SIZE = HASHES_PER_BUCKET_READ * 1;
+
+const size_t MAX_HASHES = NUM_BUCKETS * HASHES_PER_BUCKET_READ;
 
 const int SEARCH_COUNT = 1000;
 
-const size_t SORT_SIZE = 16; //In MB
+const size_t SORT_SIZE = 128; //In MB
 const size_t MAX_HASHES_SORTABLE = (SORT_SIZE * 1024 * 1024) / sizeof(struct hashObject);
 const size_t HASHES_PER_CHUNK_SORT = HASHES_PER_BUCKET_READ < MAX_HASHES_SORTABLE ? HASHES_PER_BUCKET_READ : MAX_HASHES_SORTABLE; 
-const int NUM_THREADS = 2;   
+const int NUM_THREADS = 16;   
+
+const int NUM_HASHGEN_THREADS = 2;
+const int NUM_WRITE_THREADS = 2;
+const int QUEUE_SIZE = 10;
 
 void printArray(unsigned char byteArray[HASH_SIZE], int arraySize)
 {

@@ -198,7 +198,7 @@ int main()
             clock_t end_write = clock();
             write_time += (double)(end_write - start_write) / CLOCKS_PER_SEC;
 
-            if ( (int)(totalFlushes % 1024) == 0 ) {
+            if ( (int)(totalFlushes % 32768) == 0 ) {
                 printf("Flushed : %zu\n", totalFlushes);
             }
         }
@@ -236,7 +236,7 @@ int main()
             clock_t end_write = clock();
             write_time += (double)(end_write - start_write) / CLOCKS_PER_SEC;
 
-            if ( (int)(totalFlushes % 1024) == 0 ) {
+            if ( (int)(totalFlushes % 32768) == 0 ) {
                 printf("Flushed : %zu\n", totalFlushes);
             }
         }
