@@ -39,7 +39,7 @@ unsigned int byteArrayToInt(unsigned char byteArray[HASH_SIZE], int startIndex)
 
 int main()
 {
-    srand((unsigned int)time(NULL)); 
+    srand((unsigned int)time(NULL));
 
     printf("fopen()...\n");
     FILE *file = fopen("plot.memo", "wb"); // Open for appending
@@ -64,7 +64,7 @@ int main()
 
     printf("fseeko()...\n");
     // Seek past the end of the file
-    long long desiredFileSize = MAX_HASHES * sizeof(struct hashObject);
+    long long desiredFileSize = FULL_BUCKET_SIZE * NUM_BUCKETS * sizeof(struct hashObject);
     printf("hashgen: setting size of file to %lld\n", desiredFileSize);
     if (fseeko(file, desiredFileSize - 1, SEEK_SET) != 0)
     {
@@ -92,11 +92,11 @@ int main()
     }
 
     printf("initializing bucketFlush and bucketIndex memory...\n");
-    for (int i = 0; i < NUM_BUCKETS; i++) {
+    for (int i = 0; i < NUM_BUCKETS; i++)
+    {
         bucketIndex[i] = 0;
         bucketFlush[i] = 0;
     }
-
 
     printf("allocating array2D memory...\n");
     struct hashObject **array2D = (struct hashObject **)malloc(NUM_BUCKETS * sizeof(struct hashObject *));
@@ -118,7 +118,7 @@ int main()
     }
 
     printf("initializing misc variables...\n");
-    size_t startByteIndex = PREFIX_SIZE; 
+    size_t startByteIndex = PREFIX_SIZE;
     size_t bytes_to_write = HASHES_PER_BUCKET * sizeof(struct hashObject);
     unsigned char randomArray[HASH_SIZE];
     int bIndex;
@@ -163,8 +163,9 @@ int main()
                 printf("bucket is full...\n");
             // Seek to offset 100 bytes from the beginning of the file
             if (DEBUG)
-                printf("fseeko()... %i %zu %i %zu\n", prefix, HASHES_PER_BUCKET_READ, bucketFlush[prefix], bytes_to_write);
-            long write_location = prefix * (HASHES_PER_BUCKET_READ * sizeof(struct hashObject)) + bucketFlush[prefix] * bytes_to_write;
+                printf("fseeko()... %i %zu %i %zu\n", prefix, FULL_BUCKET_SIZE, bucketFlush[prefix], bytes_to_write);
+            // WRITE CODE HERE //
+            long write_location = prefix * (FULL_BUCKET_SIZE * sizeof(struct hashObject)) + bucketFlush[prefix] * bytes_to_write;
             if (DEBUG)
                 printf("fseeko(%lu)...\n", write_location);
             if (fseeko(file, write_location, SEEK_SET) != 0)
@@ -198,7 +199,8 @@ int main()
             clock_t end_write = clock();
             write_time += (double)(end_write - start_write) / CLOCKS_PER_SEC;
 
-            if ( (int)(totalFlushes % 1024) == 0 ) {
+            if ((int)(totalFlushes % 1024) == 0)
+            {
                 printf("Flushed : %zu\n", totalFlushes);
             }
         }
@@ -208,10 +210,12 @@ int main()
 
     for (size_t i = 0; i < NUM_BUCKETS; i++)
     {
-        if ( bucketFlush[i] < (HASHES_PER_BUCKET_READ / HASHES_PER_BUCKET) ) {
-clock_t start_write = clock();
+        if (bucketFlush[i] < (HASHES_PER_BUCKET_READ / HASHES_PER_BUCKET))
+        {
+            clock_t start_write = clock();
 
-            long write_location = i * (HASHES_PER_BUCKET_READ * sizeof(struct hashObject)) + bucketFlush[i] * bytes_to_write;
+            //Write code here// array2D -> each bucket there is an array
+            long write_location = i * (FULL_BUCKET_SIZE * sizeof(struct hashObject)) + bucketFlush[i] * bytes_to_write;
             if (fseeko(file, write_location, SEEK_SET) != 0)
             {
                 perror("Error seeking in file");
@@ -236,12 +240,12 @@ clock_t start_write = clock();
             clock_t end_write = clock();
             write_time += (double)(end_write - start_write) / CLOCKS_PER_SEC;
 
-            if ( (int)(totalFlushes % 1024) == 0 ) {
+            if ((int)(totalFlushes % 1024) == 0)
+            {
                 printf("Flushed : %zu\n", totalFlushes);
             }
         }
     }
-    
 
     printf("finished workload...\n");
 

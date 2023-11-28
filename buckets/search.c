@@ -76,7 +76,7 @@ int main() {
     }
 
     struct hashObject *bucket = (struct hashObject *) malloc( FULL_BUCKET_SIZE * sizeof(struct hashObject) );
-
+    
     for (int i = 0; i < SEARCH_COUNT; i++)
     // for (int i = 0; i < 1; i++)
     {
@@ -102,6 +102,7 @@ int main() {
 
         //STEP 3 : Read the bucket in memory
         size_t bytesRead = fread(bucket, 1, FULL_BUCKET_SIZE * sizeof(struct hashObject), file);
+        
         if (bytesRead != FULL_BUCKET_SIZE * sizeof(struct hashObject))
         {
             perror("Error reading file");
@@ -110,6 +111,7 @@ int main() {
         }
 
         //STEP 4 : Loop through records to search
+        
         bool found = false;
         for (size_t j = 0; j < FULL_BUCKET_SIZE; j++)
         {
@@ -119,6 +121,7 @@ int main() {
             }   
         }
         
+        // Step 5: get the last value of the record once matched with the intial values -> decompress
         clock_t end_time = clock();
         double elapsed_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
 
