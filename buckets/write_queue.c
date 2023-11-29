@@ -19,6 +19,7 @@ typedef struct {
 Queue* write_queue;
 
 void initializeQueue() {
+    write_queue = (Queue *) malloc( sizeof(Queue) );
     write_queue->front = NULL;
     write_queue->rear = NULL;
     write_queue->count = 0;
@@ -47,9 +48,8 @@ void enqueue(size_t write_index, struct hashObject *array) {
         write_queue->rear = newNode;
     }
     write_queue->count++;
-
+    // printf("Added to write queue - %d\n", write_queue->count);
     pthread_mutex_unlock(&write_queue->mutex);
-    printf("Added to write queue - %d\n", write_queue->count);
 }
 
 Node* dequeue() {
@@ -72,11 +72,9 @@ Node* dequeue() {
         write_queue->front = temp->next;
     }
 
-    free(temp);
     write_queue->count--;
+    // printf("Removed from queue - %d\n", write_queue->count);
     pthread_mutex_unlock(&write_queue->mutex);
-
-    printf("Removed from queue - %d\n", write_queue->count);
 
     return temp;
 }

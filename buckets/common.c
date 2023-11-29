@@ -11,8 +11,8 @@ struct hashObject
 };
 
 const size_t NUM_BUCKETS = 1 << (PREFIX_SIZE * 8);
-const size_t HASHES_PER_BUCKET = 256; 
-const size_t HASHES_PER_BUCKET_READ = 256;
+const size_t HASHES_PER_BUCKET = 256 * 1024; 
+const size_t HASHES_PER_BUCKET_READ = 256 * 1024 ;
 const size_t FULL_BUCKET_SIZE = HASHES_PER_BUCKET_READ * 1;
 
 const size_t MAX_HASHES = NUM_BUCKETS * HASHES_PER_BUCKET_READ;

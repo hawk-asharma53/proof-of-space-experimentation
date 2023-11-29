@@ -8,7 +8,7 @@
 #include "blake3.h"
 #include <sys/time.h>
 #include <pthread.h>
-#include "write_queue.c"
+#include "circular_queue.c"
 
 bool DEBUG = false;
 
@@ -17,6 +17,7 @@ size_t bytes_to_write = HASHES_PER_BUCKET * sizeof(struct hashObject);
 
 int *bucketIndex;
 int *bucketFlush;
+size_t totalFlushes = 0;
 struct hashObject **array2D;
 bool finished = false;
 
@@ -37,32 +38,49 @@ void generateRandomByteArray(unsigned char result[HASH_SIZE])
     blake3_hasher_finalize(&hasher, result, HASH_SIZE);
 }
 
-void* writeToDisk() {
+void* writeToDisk(void *arg) {
+    int thread_id = *(int *)arg;
     while ( true )
     {
-        Node *node = dequeue();
+        Node *node = dequeue(&write_queue);
         if ( node == NULL && finished ) {
             break;
         }
 
-        pthread_mutex_lock(&file_mutex);
-        if (fseeko(file, node->write_index, SEEK_SET) != 0)
-        {
-            perror("Error seeking in file");
-            fclose(file);
-            return NULL;
+        if ( node != NULL ) {
+            // printf("dequeue, location - %ld\n", node->write_index);
+            pthread_mutex_lock(&file_mutex);
+            printf("Thread %d writing start\n", thread_id);
+
+            if (fseeko(file, node->write_index, SEEK_SET) != 0)
+            {
+                perror("Error seeking in file");
+                fclose(file);
+                return NULL;
+            }
+            
+            size_t bytesWritten = fwrite(node->array, 1, bytes_to_write, file);
+            if (bytesWritten != bytes_to_write)
+            {
+                perror("Error writing to file");
+                printf("fwrite()... %lu %lu %zu\n", node->write_index, bytes_to_write, bytesWritten);
+                fclose(file);
+                return NULL;
+            }
+
+            // free(node);
+
+            totalFlushes++;
+            if ( (int)(totalFlushes % 10) == 0 ) {
+                printf("Flushed : %zu\n", totalFlushes);
+            }
+            printf("Thread %d writing done\n", thread_id);
+
+            pthread_mutex_unlock(&file_mutex);
         }
-        
-        size_t bytesWritten = fwrite(node->array, 1, bytes_to_write, file);
-        if (bytesWritten != bytes_to_write)
-        {
-            perror("Error writing to file");
-            printf("fwrite()... %lu %lu %zu\n", node->write_index, bytes_to_write, bytesWritten);
-            fclose(file);
-            return NULL;
-        }
-        pthread_mutex_unlock(&file_mutex);
     }
+    printf("Thread %d exiting\n", thread_id);
+
 }
 
 // Function to convert a 12-byte array to an integer
@@ -80,7 +98,9 @@ unsigned int byteArrayToInt(unsigned char byteArray[HASH_SIZE], int startIndex)
 
 void addChunkToQueue( unsigned int prefix ) {
     size_t write_location = prefix * (FULL_BUCKET_SIZE * sizeof(struct hashObject)) + bucketFlush[prefix] * bytes_to_write;
-    enqueue(write_location, array2D[prefix]);
+    // printf("write_location - %ld, prefix - %d, flushIndex - %d\n", write_location, prefix, bucketFlush[prefix]);
+
+    enqueue(&write_queue, write_location, array2D[prefix]);
     bucketFlush[prefix]++;
     bucketIndex[prefix] = 0;
 }
@@ -99,9 +119,11 @@ void* generate_hashes(void *arg) {
         unsigned int prefix = byteArrayToInt(randomArray, 0);
         pthread_mutex_lock(&bucket_mutexes[prefix]);
         int bIndex = bucketIndex[prefix];
-        printf("Thread Id - %d, prefix - %d\n", thread_id, prefix);
 
         array2D[prefix][bIndex].value = NONCE;
+
+        // printf("Thread Id - %d, prefix - %d, bIndex - %d, NONCE - %ld\n", thread_id, prefix, bIndex, NONCE);
+
         bucketIndex[prefix]++;
         if (bucketIndex[prefix] == HASHES_PER_BUCKET)
         {
@@ -173,7 +195,7 @@ int main()
     }
 
     printf("allocating array2D memory...\n");
-    struct hashObject **array2D = (struct hashObject **)malloc(NUM_BUCKETS * sizeof(struct hashObject *));
+    array2D = (struct hashObject **)malloc(NUM_BUCKETS * sizeof(struct hashObject *));
     if (array2D == NULL)
     {
         perror("Memory allocation failed");
@@ -199,10 +221,19 @@ int main()
     }
     pthread_mutex_init(&file_mutex, NULL);
 
-    printf("allocation mutex library....\n");
+    printf("initializing write queue\n");
+    initializeQueue(&write_queue, QUEUE_SIZE);
+
+    double total_time;
+    struct timeval start_time, end_time;
+    long long elapsed;
+    gettimeofday(&start_time, NULL);
+
+    printf("Hash Generation Starting...\n");
+
     pthread_t worker_threads[NUM_HASHGEN_THREADS];
     pthread_t write_threads[NUM_WRITE_THREADS];
-    int threadsIds[NUM_HASHGEN_THREADS];
+    int threadsIds[NUM_HASHGEN_THREADS+NUM_WRITE_THREADS];
 
     for (int i = 0; i < NUM_HASHGEN_THREADS; i++)
     {
@@ -212,7 +243,8 @@ int main()
 
     for (int i = 0; i < NUM_WRITE_THREADS; i++)
     {
-        pthread_create(&write_threads[i], NULL, writeToDisk, NULL);
+        threadsIds[NUM_HASHGEN_THREADS+i] = NUM_WRITE_THREADS+i;
+        pthread_create(&write_threads[i], NULL, writeToDisk, &threadsIds[NUM_HASHGEN_THREADS+i]);
     }
 
     for (int i = 0; i < NUM_HASHGEN_THREADS; i++)
@@ -228,6 +260,7 @@ int main()
             addChunkToQueue(i);
         }
     }
+    finished = true;
 
     for (int i = 0; i < NUM_WRITE_THREADS; i++)
     {
@@ -236,11 +269,6 @@ int main()
 
     printf("closing file...\n");
     fclose(file);
-
-    double total_time;
-    struct timeval start_time, end_time;
-    long long elapsed;
-    gettimeofday(&start_time, NULL);
 
     gettimeofday(&end_time, NULL);
     elapsed = (end_time.tv_sec - start_time.tv_sec) * 1000000LL +
