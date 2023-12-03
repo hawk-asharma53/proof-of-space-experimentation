@@ -57,14 +57,15 @@ int main()
     size_t MAX_HASHES = NUM_BUCKETS * HASHES_PER_BUCKET_READ;
     printf("MAX_HASHES=%zu\n", MAX_HASHES);
 
-    float memSize = 1.0 * NUM_BUCKETS * HASHES_PER_BUCKET * sizeof(struct hashObject) / (1024.0 * 1024 * 1024);
+    // Updated: sizeof(struct hashObject) to ((sizeof((struct hashObject){0}).byteArray) + (sizeof((struct hashObject){0}).value)) so that individual sizes of the struct elements are used instead of the cumulative size of whole struct object
+    float memSize = 1.0 * NUM_BUCKETS * HASHES_PER_BUCKET * ((sizeof((struct hashObject){0}).byteArray) + (sizeof((struct hashObject){0}).value)) / (1024.0 * 1024 * 1024);
     printf("total memory needed (GB): %f\n", memSize);
-    float diskSize = 1.0 * MAX_HASHES * sizeof(struct hashObject) / (1024.0 * 1024 * 1024);
+    float diskSize = 1.0 * MAX_HASHES * ((sizeof((struct hashObject){0}).byteArray) + (sizeof((struct hashObject){0}).value)) / (1024.0 * 1024 * 1024);
     printf("total disk needed (GB): %f\n", diskSize);
 
     printf("fseeko()...\n");
     // Seek past the end of the file
-    long long desiredFileSize = FULL_BUCKET_SIZE * NUM_BUCKETS * sizeof(struct hashObject);
+    long long desiredFileSize = FULL_BUCKET_SIZE * NUM_BUCKETS * ((sizeof((struct hashObject){0}).byteArray) + (sizeof((struct hashObject){0}).value));
     printf("hashgen: setting size of file to %lld\n", desiredFileSize);
     if (fseeko(file, desiredFileSize - 1, SEEK_SET) != 0)
     {
@@ -98,6 +99,7 @@ int main()
         bucketFlush[i] = 0;
     }
 
+    // what on earth is this part doing ?
     printf("allocating array2D memory...\n");
     struct hashObject **array2D = (struct hashObject **)malloc(NUM_BUCKETS * sizeof(struct hashObject *));
     if (array2D == NULL)
@@ -119,7 +121,7 @@ int main()
 
     printf("initializing misc variables...\n");
     size_t startByteIndex = PREFIX_SIZE;
-    size_t bytes_to_write = HASHES_PER_BUCKET * sizeof(struct hashObject);
+    size_t bytes_to_write = HASHES_PER_BUCKET * ((sizeof((struct hashObject){0}).byteArray) + (sizeof((struct hashObject){0}).value));
     unsigned char randomArray[HASH_SIZE];
     int bIndex;
     size_t totalFlushes = 0;
@@ -165,7 +167,11 @@ int main()
             if (DEBUG)
                 printf("fseeko()... %i %zu %i %zu\n", prefix, FULL_BUCKET_SIZE, bucketFlush[prefix], bytes_to_write);
             // WRITE CODE HERE //
-            long write_location = prefix * (FULL_BUCKET_SIZE * sizeof(struct hashObject)) + bucketFlush[prefix] * bytes_to_write;
+            // why are we using the size of struct here // Change the sizeof(struct thingy to accomodate the array size) // bucketFlush[prefix] - does // bytes to write
+            // long write_location = prefix * (FULL_BUCKET_SIZE * sizeof(struct hashObject) - COMPR_LEVEL) + bucketFlush[prefix] * bytes_to_write;
+
+            // Updated: Using the value structures elements independently instead of using the entire size of structure
+            long write_location = prefix * (FULL_BUCKET_SIZE * ((sizeof((struct hashObject){0}).byteArray) + (sizeof((struct hashObject){0}).value))) + bucketFlush[prefix] * bytes_to_write;
             if (DEBUG)
                 printf("fseeko(%lu)...\n", write_location);
             if (fseeko(file, write_location, SEEK_SET) != 0)
@@ -179,7 +185,10 @@ int main()
             if (DEBUG)
                 printf("fwrite()... %i %lu %i\n", prefix, bytes_to_write, bucketFlush[prefix]);
 
-            size_t bytesWritten = fwrite(array2D[prefix], 1, bytes_to_write, file);
+            // size_t bytesWritten = fwrite(array2D[prefix], 1, bytes_to_write, file);
+
+            // Updated: fwrite statement from writing single struct object to individual objects
+            size_t bytesWritten = fwrite((array2D[prefix]->byteArray, array2D[prefix]->value), 1, bytes_to_write, file);
 
             if (bytesWritten != bytes_to_write)
             {
@@ -214,15 +223,23 @@ int main()
         {
             clock_t start_write = clock();
 
-            //Write code here// array2D -> each bucket there is an array
-            long write_location = i * (FULL_BUCKET_SIZE * sizeof(struct hashObject)) + bucketFlush[i] * bytes_to_write;
+            // Write code here// array2D -> each bucket there is an array
+            //  change code here ! to array from hash object | analyze writing speeds of the whole thing
+
+            // long write_location = i * (FULL_BUCKET_SIZE * sizeof(struct hashObject)) + bucketFlush[i] * bytes_to_write;
+
+            // Updated : Changed the write location from struct object to individual elements from the struct
+            long write_location = i * (FULL_BUCKET_SIZE * ((sizeof((struct hashObject){0}).byteArray) + (sizeof((struct hashObject){0}).value))) + bucketFlush[i] * bytes_to_write;
             if (fseeko(file, write_location, SEEK_SET) != 0)
             {
                 perror("Error seeking in file");
                 fclose(file);
                 return 1;
             }
-            size_t bytesWritten = fwrite(array2D[i], 1, bytes_to_write, file);
+            // size_t bytesWritten = fwrite(array2D[i], 1, bytes_to_write, file);
+
+            // Updated : Changing fwrite from struct object to writing individual struct elements
+            size_t bytesWritten = fwrite((array2D[i]->byteArray, array2D[i]->value), 1, bytes_to_write, file);
             if (bytesWritten != bytes_to_write)
             {
                 perror("Error writing to file");

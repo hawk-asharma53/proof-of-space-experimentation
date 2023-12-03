@@ -3,10 +3,11 @@
 
 #define HASH_SIZE 8
 #define PREFIX_SIZE 1
+#define COMPR_LEVEL 1 // Compression level (used in lossyCompression)
 
 struct hashObject
 {
-    char byteArray[HASH_SIZE - PREFIX_SIZE];
+    char byteArray[HASH_SIZE - PREFIX_SIZE - COMPR_LEVEL];
     long int value;
 };
 
