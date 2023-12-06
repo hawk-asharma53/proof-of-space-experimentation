@@ -8,6 +8,11 @@
 #include "common.c"
 #include "blake3.h"
 
+#define HASH_SIZE 8
+#define PREFIX_SIZE 1
+#define COMPR_LEVEL 1 // Compression level (used in lossyCompression)
+#define TOTAL_SIZE HASH_SIZE + 8 - PREFIX_SIZE - COMPR_LEVEL
+
 struct someStruct
 {
     // char byteArray[2];
@@ -69,11 +74,17 @@ int main()
     // {
     //     printf("%u\n", result[i]);
     // }
-    struct hashObject hashOb;
-    printf("size of structure: %d\n\n", sizeof(hashOb));
+    // struct hashObject hashOb;
+    // printf("size of structure: %d\n\n", sizeof(hashOb));
 
-    struct someStruct some;
-    printf("size of new struct: %ld\n", sizeof(some));
+    // struct someStruct some;
+    // printf("size of new struct: %ld\n", sizeof(some));
+    unsigned seed = time(0);
+    srand(seed);
+
+    printf("%d", rand());
+
+    printf("total size%d", TOTAL_SIZE);
 }
 
 //(array 1d, compression level)

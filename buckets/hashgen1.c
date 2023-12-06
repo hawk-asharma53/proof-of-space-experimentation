@@ -27,7 +27,6 @@ void generateRandomByteArray(unsigned char result[HASH_SIZE])
 // Function to convert a 12-byte array to an integer
 unsigned int byteArrayToInt(unsigned char byteArray[HASH_SIZE], int startIndex)
 {
-
     unsigned int result = 0;
     if (DEBUG)
         printArray(byteArray, HASH_SIZE);
@@ -38,9 +37,24 @@ unsigned int byteArrayToInt(unsigned char byteArray[HASH_SIZE], int startIndex)
     return result;
 }
 
+// Changing the way we write 2D struct arrays to 1D char arrays
+char *returnArr(struct hashObject structArr[])
+{
+    int hashesStored = sizeof(structArr);
+    printf("hashesStored : %d\n", hashesStored);
+    char *arr = (char *)malloc(hashesStored * (sizeof(char)));
+    for (int i = 0; i < hashesStored; i++)
+    {
+        arr[i] = structArr[i].byteArray + (char)(structArr[i].value);
+    }
+
+    printf("size of array: %d\n", sizeof(arr));
+    return arr;
+}
+
 int main()
 {
-    srand((unsigned int)time(0));
+    srand((unsigned int)time(NULL));
 
     printf("fopen()...\n");
     FILE *file = fopen("plot.memo", "wb"); // Open for appending
@@ -58,7 +72,6 @@ int main()
     size_t MAX_HASHES = NUM_BUCKETS * HASHES_PER_BUCKET_READ;
     printf("MAX_HASHES=%zu\n", MAX_HASHES);
 
-    // Updated: sizeof(struct hashObject) to ((sizeof((struct hashObject){0}).byteArray) + (sizeof((struct hashObject){0}).value)) so that individual sizes of the struct elements are used instead of the cumulative size of whole struct object
     float memSize = 1.0 * NUM_BUCKETS * HASHES_PER_BUCKET * ((sizeof((struct hashObject){0}).byteArray) + (sizeof((struct hashObject){0}).value)) / (1024.0 * 1024 * 1024);
     printf("total memory needed (GB): %f\n", memSize);
     float diskSize = 1.0 * MAX_HASHES * ((sizeof((struct hashObject){0}).byteArray) + (sizeof((struct hashObject){0}).value)) / (1024.0 * 1024 * 1024);
@@ -118,7 +131,7 @@ int main()
             return 1;
         }
     }
-    // Add sequential write during writing on buffer instead of writing it on file | write buffer in chunk |
+
     printf("initializing misc variables...\n");
     size_t startByteIndex = PREFIX_SIZE;
     size_t bytes_to_write = HASHES_PER_BUCKET * ((sizeof((struct hashObject){0}).byteArray) + (sizeof((struct hashObject){0}).value));
@@ -166,11 +179,6 @@ int main()
             // Seek to offset 100 bytes from the beginning of the file
             if (DEBUG)
                 printf("fseeko()... %i %zu %i %zu\n", prefix, FULL_BUCKET_SIZE, bucketFlush[prefix], bytes_to_write);
-            // WRITE CODE HERE //
-            // why are we using the size of struct here // Change the sizeof(struct thingy to accomodate the array size) // bucketFlush[prefix] - does // bytes to write
-            // long write_location = prefix * (FULL_BUCKET_SIZE * sizeof(struct hashObject) - COMPR_LEVEL) + bucketFlush[prefix] * bytes_to_write;
-
-            // Updated: Using the value structures elements independently instead of using the entire size of structure
             long write_location = prefix * (FULL_BUCKET_SIZE * ((sizeof((struct hashObject){0}).byteArray) + (sizeof((struct hashObject){0}).value))) + bucketFlush[prefix] * bytes_to_write;
             if (DEBUG)
                 printf("fseeko(%lu)...\n", write_location);
@@ -185,18 +193,18 @@ int main()
             if (DEBUG)
                 printf("fwrite()... %i %lu %i\n", prefix, bytes_to_write, bucketFlush[prefix]);
 
-            // size_t bytesWritten = fwrite(array2D[prefix], 1, bytes_to_write, file);
-
-            // Updated: fwrite statement from writing single struct object to individual objects
-            size_t bytesWritten = fwrite((array2D[prefix]->byteArray, array2D[prefix]->value), 1, bytes_to_write, file);
-
-            if (bytesWritten != bytes_to_write)
-            {
-                perror("Error writing to file");
-                printf("final loopfwrite()... %lu %i %lu %i %zu\n", write_location, prefix, bytes_to_write, bucketFlush[prefix], bytesWritten);
-                fclose(file);
-                return 1;
-            }
+            char *sequentialData = returnArr(array2D[prefix]);
+            printf("location: %d\n", prefix);
+            size_t bytesWritten = fwrite(sequentialData, 1, bytes_to_write, file);
+            free(sequentialData);
+            printf("bytesWritten : %d | bytes_to_write : %d", bytesWritten, bytes_to_write);
+            // if (bytesWritten != bytes_to_write)
+            // {
+            //     perror("Error writing to file");
+            //     printf("fwrite()... %lu %i %lu %i %zu\n", write_location, prefix, bytes_to_write, bucketFlush[prefix], bytesWritten);
+            //     fclose(file);
+            //     return 1;
+            // }
 
             if (DEBUG)
                 printf("updating bucketFlush and bucketIndex...\n");
@@ -208,7 +216,7 @@ int main()
             clock_t end_write = clock();
             write_time += (double)(end_write - start_write) / CLOCKS_PER_SEC;
 
-            if ((int)(totalFlushes % 1024) == 0)
+            if ((int)(totalFlushes % 32768) == 0)
             {
                 printf("Flushed : %zu\n", totalFlushes);
             }
@@ -223,12 +231,6 @@ int main()
         {
             clock_t start_write = clock();
 
-            // Write code here// array2D -> each bucket there is an array
-            //  change code here ! to array from hash object | analyze writing speeds of the whole thing
-
-            // long write_location = i * (FULL_BUCKET_SIZE * sizeof(struct hashObject)) + bucketFlush[i] * bytes_to_write;
-
-            // Updated : Changed the write location from struct object to individual elements from the struct
             long write_location = i * (FULL_BUCKET_SIZE * ((sizeof((struct hashObject){0}).byteArray) + (sizeof((struct hashObject){0}).value))) + bucketFlush[i] * bytes_to_write;
             if (fseeko(file, write_location, SEEK_SET) != 0)
             {
@@ -236,17 +238,20 @@ int main()
                 fclose(file);
                 return 1;
             }
-            // size_t bytesWritten = fwrite(array2D[i], 1, bytes_to_write, file);
 
-            // Updated : Changing fwrite from struct object to writing individual struct elements
-            size_t bytesWritten = fwrite((array2D[i]->byteArray, array2D[i]->value), 1, bytes_to_write, file);
-            if (bytesWritten != bytes_to_write)
-            {
-                perror("Error writing to file");
-                printf("fwrite()... %lu %zu %lu %i %zu\n", write_location, i, bytes_to_write, bucketFlush[i], bytesWritten);
-                fclose(file);
-                return 1;
-            }
+            char *sequentialData = returnArr(array2D[i]);
+            printf("location : %d\n", i);
+            size_t bytesWritten = fwrite(sequentialData, 1, bytes_to_write, file);
+            free(sequentialData);
+
+            // size_t bytesWritten = fwrite(array2D[i], 1, bytes_to_write, file);
+            // if (bytesWritten != bytes_to_write)
+            // {
+            //     perror("Error writing to file");
+            //     printf("fwrite()... %lu %zu %lu %i %zu\n", write_location, i, bytes_to_write, bucketFlush[i], bytesWritten);
+            //     fclose(file);
+            //     return 1;
+            // }
 
             // fflush(file);
 
@@ -257,7 +262,7 @@ int main()
             clock_t end_write = clock();
             write_time += (double)(end_write - start_write) / CLOCKS_PER_SEC;
 
-            if ((int)(totalFlushes % 1024) == 0)
+            if ((int)(totalFlushes % 32768) == 0)
             {
                 printf("Flushed : %zu\n", totalFlushes);
             }

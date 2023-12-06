@@ -3,7 +3,8 @@
 
 #define HASH_SIZE 8
 #define PREFIX_SIZE 1
-#define COMPR_LEVEL 1 // Compression level (used in lossyCompression)
+#define COMPR_LEVEL 2 // Compression level (used in lossyCompression)
+#define TOTAL_SIZE HASH_SIZE + 8 - COMPR_LEVEL
 
 struct hashObject
 {
@@ -14,9 +15,9 @@ struct hashObject
 const size_t FILE_SIZE = 178;
 
 const size_t NUM_BUCKETS = 1 << (PREFIX_SIZE * 8);
-const size_t HASHES_PER_BUCKET = 256 * 1024 * 2;
-const size_t HASHES_PER_BUCKET_READ = 256 * 256 * 256;
-const size_t FULL_BUCKET_SIZE = HASHES_PER_BUCKET_READ * 3;
+const size_t HASHES_PER_BUCKET = 256 * 1024;      // bucket write | define how much mem we need
+const size_t HASHES_PER_BUCKET_READ = 256 * 1024; // kitna MB consume per bucket
+const size_t FULL_BUCKET_SIZE = HASHES_PER_BUCKET_READ * 1;
 // change these referring to the google sheet
 
 const int SEARCH_COUNT = 1000;
