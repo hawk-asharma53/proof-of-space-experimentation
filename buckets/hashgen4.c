@@ -13,7 +13,7 @@
 bool DEBUG = false;
 
 FILE *file;
-size_t bytes_to_write = HASHES_PER_BUCKET * sizeof(struct hashObject);
+size_t bytes_to_write = CUP_SIZE * sizeof(struct hashObject);
 
 int *bucketIndex;
 int *bucketFlush;
@@ -97,7 +97,7 @@ unsigned int byteArrayToInt(unsigned char byteArray[HASH_SIZE], int startIndex)
 }
 
 void addChunkToQueue( unsigned int prefix ) {
-    size_t write_location = prefix * (FULL_BUCKET_SIZE * sizeof(struct hashObject)) + bucketFlush[prefix] * bytes_to_write;
+    size_t write_location = prefix * (BUCKET_SIZE_MUTIPLIER * sizeof(struct hashObject)) + bucketFlush[prefix] * bytes_to_write;
     // printf("write_location - %ld, prefix - %d, flushIndex - %d\n", write_location, prefix, bucketFlush[prefix]);
 
     enqueue(&write_queue, write_location, array2D[prefix]);
@@ -125,7 +125,7 @@ void* generate_hashes(void *arg) {
         // printf("Thread Id - %d, prefix - %d, bIndex - %d, NONCE - %ld\n", thread_id, prefix, bIndex, NONCE);
 
         bucketIndex[prefix]++;
-        if (bucketIndex[prefix] == HASHES_PER_BUCKET)
+        if (bucketIndex[prefix] == CUP_SIZE)
         {
             addChunkToQueue(prefix);
         }
@@ -149,19 +149,19 @@ int main()
 
     long int NONCE = 0;
     printf("NUM_BUCKETS=%zu\n", NUM_BUCKETS);
-    printf("HASHES_PER_BUCKET_WRITE=%zu\n", HASHES_PER_BUCKET);
-    printf("HASHES_PER_BUCKET_READ=%zu\n", HASHES_PER_BUCKET_READ);
+    printf("HASHES_PER_BUCKET_WRITE=%zu\n", CUP_SIZE);
+    printf("BUCKET_SIZE=%zu\n", BUCKET_SIZE);
 
     printf("MAX_HASHES=%zu\n", MAX_HASHES);
 
-    float memSize = 1.0 * NUM_BUCKETS * HASHES_PER_BUCKET * sizeof(struct hashObject) / (1024.0 * 1024 * 1024);
+    float memSize = 1.0 * NUM_BUCKETS * CUP_SIZE * sizeof(struct hashObject) / (1024.0 * 1024 * 1024);
     printf("total memory needed (GB): %f\n", memSize);
     float diskSize = 1.0 * MAX_HASHES * sizeof(struct hashObject) / (1024.0 * 1024 * 1024);
     printf("total disk needed (GB): %f\n", diskSize);
 
     printf("fseeko()...\n");
     // Seek past the end of the file
-    long long desiredFileSize = FULL_BUCKET_SIZE * NUM_BUCKETS * sizeof(struct hashObject);
+    long long desiredFileSize = BUCKET_SIZE_MUTIPLIER * NUM_BUCKETS * sizeof(struct hashObject);
     printf("hashgen: setting size of file to %lld\n", desiredFileSize);
     if (fseeko(file, desiredFileSize - 1, SEEK_SET) != 0)
     {
@@ -205,7 +205,7 @@ int main()
     printf("allocating array2D[][] memory...\n");
     for (int i = 0; i < NUM_BUCKETS; i++)
     {
-        array2D[i] = (struct hashObject *)malloc(HASHES_PER_BUCKET * sizeof(struct hashObject));
+        array2D[i] = (struct hashObject *)malloc(CUP_SIZE * sizeof(struct hashObject));
         if (array2D[i] == NULL)
         {
             perror("Memory allocation failed");
@@ -256,7 +256,7 @@ int main()
 
     for (size_t i = 0; i < NUM_BUCKETS; i++)
     {
-        if ( bucketFlush[i] < (HASHES_PER_BUCKET_READ / HASHES_PER_BUCKET) ) {
+        if ( bucketFlush[i] < (BUCKET_SIZE / CUP_SIZE) ) {
             addChunkToQueue(i);
         }
     }

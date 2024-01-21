@@ -81,9 +81,9 @@ int main() {
 
     double times[SEARCH_COUNT];
 
-    const size_t numberOfBucketsToSort = (HASHES_PER_BUCKET_READ / HASHES_PER_CHUNK_SORT) * NUM_BUCKETS;
+    const size_t numberOfBucketsToSort = (BUCKET_SIZE / HASHES_PER_CHUNK_SORT) * NUM_BUCKETS;
 
-    printf("HASHES_PER_BUCKET_READ = %zu\n", HASHES_PER_BUCKET_READ);
+    printf("BUCKET_SIZE = %zu\n", BUCKET_SIZE);
 
 
     // Open the file for reading
@@ -119,7 +119,7 @@ int main() {
         return 1;
     }
 
-    struct hashObject *bucket = (struct hashObject *) malloc( HASHES_PER_BUCKET_READ * sizeof(struct hashObject) );
+    struct hashObject *bucket = (struct hashObject *) malloc( BUCKET_SIZE * sizeof(struct hashObject) );
 
     for (int i = 0; i < SEARCH_COUNT; i++)
     // for (int i = 0; i < 1; i++)
@@ -134,12 +134,12 @@ int main() {
             printf("Prefix : %u\n", prefix);
         }
 
-        size_t numberOfSortedBuckets = HASHES_PER_BUCKET_READ < MAX_HASHES_SORTABLE ? 1 : HASHES_PER_BUCKET_READ / MAX_HASHES_SORTABLE;
+        size_t numberOfSortedBuckets = BUCKET_SIZE < MAX_HASHES_SORTABLE ? 1 : BUCKET_SIZE / MAX_HASHES_SORTABLE;
 
         for (size_t j = 0; j < numberOfSortedBuckets; j++)
         {
             //STEP 2 : Seek to the position in file
-            size_t bucket_location = (prefix * HASHES_PER_BUCKET_READ + j * HASHES_PER_CHUNK_SORT) * sizeof(struct hashObject)  ;
+            size_t bucket_location = (prefix * BUCKET_SIZE + j * HASHES_PER_CHUNK_SORT) * sizeof(struct hashObject)  ;
             if (fseeko(file, bucket_location, SEEK_SET) != 0)
             {
                 perror("Error seeking in file");

@@ -13,10 +13,10 @@ int main() {
     size_t numBuckets = (size_t)pow(2, PREFIX_SIZE * 8);
     printf("Number of bucket : %zu\n", numBuckets);
 
-    const size_t numberOfHashesInBucket = HASHES_PER_BUCKET_READ < MAX_HASHES_SORTABLE ? HASHES_PER_BUCKET_READ : MAX_HASHES_SORTABLE ;    
+    const size_t numberOfHashesInBucket = BUCKET_SIZE < MAX_HASHES_SORTABLE ? BUCKET_SIZE : MAX_HASHES_SORTABLE ;    
     printf("Number of hashes per bucket to sort : %zu\n", numberOfHashesInBucket);
 
-    const size_t numberOfBucketsToSort = (HASHES_PER_BUCKET / numberOfHashesInBucket) * numBuckets;
+    const size_t numberOfBucketsToSort = (CUP_SIZE / numberOfHashesInBucket) * numBuckets;
     printf("Number of bucket to sort : %zu\n", numberOfBucketsToSort);
 
     const size_t bucketSizeInBytes = numberOfHashesInBucket * sizeof(struct hashObject);

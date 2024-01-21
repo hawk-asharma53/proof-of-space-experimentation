@@ -28,13 +28,13 @@ void initializeQueue() {
 
 void enqueue(size_t write_index, struct hashObject *array) {
     Node* newNode = (Node*)malloc(sizeof(Node));
-    newNode->array = (struct hashObject *)malloc(HASHES_PER_BUCKET * sizeof(struct hashObject));
+    newNode->array = (struct hashObject *)malloc(CUP_SIZE * sizeof(struct hashObject));
     if (!newNode) {
         perror("Error in malloc");
         exit(EXIT_FAILURE);
     }
     newNode->write_index = write_index;
-    memcpy(array, newNode->array, HASHES_PER_BUCKET * sizeof(struct hashObject));
+    memcpy(array, newNode->array, CUP_SIZE * sizeof(struct hashObject));
 
     pthread_mutex_lock(&write_queue->mutex);
 

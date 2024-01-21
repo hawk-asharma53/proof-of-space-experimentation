@@ -27,7 +27,7 @@ void initializeQueue(CircularQueue *queue, int size) {
     queue->size = 0;
     for (int i = 0; i < size; i++)
     {
-        queue->arr[i].array = (struct hashObject *) malloc( HASHES_PER_BUCKET * sizeof(struct hashObject) );
+        queue->arr[i].array = (struct hashObject *) malloc( CUP_SIZE * sizeof(struct hashObject) );
     }
     pthread_mutex_init(&(queue->mutex), NULL);
 }
@@ -59,7 +59,7 @@ void enqueue(CircularQueue *queue, size_t write_index, struct hashObject *array)
     }
 
     queue->arr[queue->rear].write_index = write_index;
-    memcpy(array, queue->arr[queue->rear].array, HASHES_PER_BUCKET * sizeof(struct hashObject));
+    memcpy(array, queue->arr[queue->rear].array, CUP_SIZE * sizeof(struct hashObject));
     queue->size++;
     printf("Queue Size - %d, Front - %d, Rear - %d\n", queue->size, queue->front, queue->rear);
     pthread_mutex_unlock(&queue->mutex);

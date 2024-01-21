@@ -10,9 +10,9 @@ bool DEBUG = false;
 
 int main() {
 
-    const size_t NUM_CHUNKS_SORT = (HASHES_PER_BUCKET_READ / HASHES_PER_CHUNK_SORT) * NUM_BUCKETS;
+    const size_t NUM_CHUNKS_SORT = (BUCKET_SIZE / HASHES_PER_CHUNK_SORT) * NUM_BUCKETS;
 
-    printf("HASHES_PER_BUCKET_READ : %zu\n", HASHES_PER_BUCKET_READ);
+    printf("BUCKET_SIZE : %zu\n", BUCKET_SIZE);
     printf("NUM_BUCKETS : %zu\n", NUM_BUCKETS);
     printf("HASHES_PER_CHUNK_SORT : %zu\n", HASHES_PER_CHUNK_SORT);
     printf("NUM_CHUNKS_SORT : %zu\n", NUM_CHUNKS_SORT);

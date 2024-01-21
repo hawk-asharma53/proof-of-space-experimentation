@@ -51,13 +51,13 @@ int main()
 
     long int NONCE = 0;
     printf("NUM_BUCKETS=%zu\n", NUM_BUCKETS);
-    printf("HASHES_PER_BUCKET=%zu\n", HASHES_PER_BUCKET);
-    printf("HASHES_PER_BUCKET_READ=%zu\n", HASHES_PER_BUCKET_READ);
+    printf("CUP_SIZE=%zu\n", CUP_SIZE);
+    printf("BUCKET_SIZE=%zu\n", BUCKET_SIZE);
 
-    size_t MAX_HASHES = NUM_BUCKETS * HASHES_PER_BUCKET_READ;
+    size_t MAX_HASHES = NUM_BUCKETS * BUCKET_SIZE;
     printf("MAX_HASHES=%zu\n", MAX_HASHES);
 
-    float memSize = 1.0 * NUM_BUCKETS * HASHES_PER_BUCKET * sizeof(struct hashObject) / (1024.0 * 1024 * 1024);
+    float memSize = 1.0 * NUM_BUCKETS * CUP_SIZE * sizeof(struct hashObject) / (1024.0 * 1024 * 1024);
     printf("total memory needed (GB): %f\n", memSize);
     float diskSize = 1.0 * MAX_HASHES * sizeof(struct hashObject) / (1024.0 * 1024 * 1024);
     printf("total disk needed (GB): %f\n", diskSize);
@@ -109,7 +109,7 @@ int main()
     printf("allocating array2D[][] memory...\n");
     for (int i = 0; i < NUM_BUCKETS; i++)
     {
-        array2D[i] = (struct hashObject *)malloc(HASHES_PER_BUCKET * sizeof(struct hashObject));
+        array2D[i] = (struct hashObject *)malloc(CUP_SIZE * sizeof(struct hashObject));
         if (array2D[i] == NULL)
         {
             perror("Memory allocation failed");
@@ -119,7 +119,7 @@ int main()
 
     printf("initializing misc variables...\n");
     size_t startByteIndex = PREFIX_SIZE; 
-    size_t bytes_to_write = HASHES_PER_BUCKET * sizeof(struct hashObject);
+    size_t bytes_to_write = CUP_SIZE * sizeof(struct hashObject);
     unsigned char randomArray[HASH_SIZE];
     int bIndex;
     size_t totalFlushes = 0;
@@ -155,7 +155,7 @@ int main()
         bucketIndex[prefix]++;
         NONCE++;
         // bucket is full, should write to disk
-        if (bucketIndex[prefix] == HASHES_PER_BUCKET)
+        if (bucketIndex[prefix] == CUP_SIZE)
         {
             clock_t start_write = clock();
 
@@ -163,8 +163,8 @@ int main()
                 printf("bucket is full...\n");
             // Seek to offset 100 bytes from the beginning of the file
             if (DEBUG)
-                printf("fseeko()... %i %zu %i %zu\n", prefix, HASHES_PER_BUCKET_READ, bucketFlush[prefix], bytes_to_write);
-            long write_location = prefix * (HASHES_PER_BUCKET_READ * sizeof(struct hashObject)) + bucketFlush[prefix] * bytes_to_write;
+                printf("fseeko()... %i %zu %i %zu\n", prefix, BUCKET_SIZE, bucketFlush[prefix], bytes_to_write);
+            long write_location = prefix * (BUCKET_SIZE * sizeof(struct hashObject)) + bucketFlush[prefix] * bytes_to_write;
             if (DEBUG)
                 printf("fseeko(%lu)...\n", write_location);
             if (fseeko(file, write_location, SEEK_SET) != 0)
@@ -208,10 +208,10 @@ int main()
 
     for (size_t i = 0; i < NUM_BUCKETS; i++)
     {
-        if ( bucketFlush[i] < (HASHES_PER_BUCKET_READ / HASHES_PER_BUCKET) ) {
+        if ( bucketFlush[i] < (BUCKET_SIZE / CUP_SIZE) ) {
 clock_t start_write = clock();
 
-            long write_location = i * (HASHES_PER_BUCKET_READ * sizeof(struct hashObject)) + bucketFlush[i] * bytes_to_write;
+            long write_location = i * (BUCKET_SIZE * sizeof(struct hashObject)) + bucketFlush[i] * bytes_to_write;
             if (fseeko(file, write_location, SEEK_SET) != 0)
             {
                 perror("Error seeking in file");

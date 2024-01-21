@@ -26,9 +26,9 @@ int main()
     while (index < SEARCH_COUNT)
     {
         int random_bucket = rand() % NUM_BUCKETS;
-        int random_index = rand() % HASHES_PER_BUCKET_READ;
+        int random_index = rand() % BUCKET_SIZE;
 
-        size_t line_number= (random_bucket * FULL_BUCKET_SIZE) + random_index;
+        size_t line_number= (random_bucket * BUCKET_SIZE_MUTIPLIER) + random_index;
 
         if (fseeko(file, line_number * sizeof(struct hashObject), SEEK_SET) != 0)
         {
