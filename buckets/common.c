@@ -12,7 +12,7 @@ struct hashObject
 
 const size_t NUM_BUCKETS = 1 << (PREFIX_SIZE * 8);
 const size_t CUP_SIZE = 256 * 1024; 
-const size_t BUCKET_SIZE = 256 * 1024 ;
+const size_t BUCKET_SIZE = 2 * 256 * 1024 ;
 const size_t BUCKET_SIZE_MUTIPLIER = BUCKET_SIZE * 1;
 
 const size_t MAX_HASHES = NUM_BUCKETS * BUCKET_SIZE;

@@ -5,10 +5,30 @@
 #include <string.h>
 #include <math.h>
 #include <stdbool.h>
-#include "common.c"
+#include <sys/sysinfo.h>
+#include <sys/statvfs.h>
 #include "blake3.h"
 
 bool DEBUG = false;
+
+#define HASH_SIZE 8
+#define PREFIX_SIZE 1
+
+struct hashObject
+{
+    char byteArray[HASH_SIZE - PREFIX_SIZE];
+    long int value;
+};
+
+void printArray(unsigned char byteArray[HASH_SIZE], int arraySize)
+{
+    printf("printArray(): ");
+    for (size_t i = 0; i < arraySize; i++)
+    {
+        printf("%02x ", byteArray[i]); // Print each byte in hexadecimal format
+    }
+    printf("\n");
+}
 
 // Function to generate a random 8-byte array
 void generateRandomByteArray(unsigned char result[HASH_SIZE])
@@ -37,24 +57,74 @@ unsigned int byteArrayToInt(unsigned char byteArray[HASH_SIZE], int startIndex)
     return result;
 }
 
-int main()
+
+int main(int argc, char *argv[])
 {
+    //assigning default values
+    struct sysinfo info;
+
+    if (sysinfo(&info) != 0) {
+        perror("sysinfo");
+        return 1;
+    }
+
+    unsigned long long total_memory = (unsigned long long)info.totalram * info.mem_unit - 1073741824;
+    
+    char *vault_filename = "memo.vault";
+
+    struct statvfs stat;
+    // Specify the path to the filesystem you want to check
+    const char *path = "/";
+
+    if (statvfs(path, &stat) != 0) {
+        perror("statvfs");
+        return 1;
+    }
+
+    // Calculate and print the available space in bytes
+    // unsigned long long available_space = stat.f_bavail * stat.f_frsize;
+    size_t available_space = stat.f_bavail * stat.f_frsize;
+
+    //assigning values recieved from CLI input
+    if (argc > 1)
+    {
+        vault_filename = argv[1];
+        total_memory = atol(argv[2]) * 1024 * 1024;
+        available_space = atol(argv[3]) * 1024 * 1024;
+        // printf("You entered Vault Name: %s\n",vault_filename);
+        // printf("You entered RAM memory used: %lld MB\n",(total_memory));
+        // printf("You entered Totl vault size: %zu MB\n",(available_space));
+    }
+
+
+    //assigning variables based upon values from CLI
+
+    size_t CUP_SIZE = (total_memory / 256) / sizeof(struct hashObject);
+    size_t BUCKET_SIZE = (available_space / 256) / sizeof(struct hashObject);
+    const size_t NUM_BUCKETS = 1 << (PREFIX_SIZE * 8);
+    const size_t BUCKET_SIZE_MUTIPLIER = BUCKET_SIZE * 1;
 
     FILE *fp;
-    fp = freopen("output.txt", "w", stdout);
+    fp = freopen("output_hashgen_try.txt", "w", stdout);
     if (fp == NULL) {
     // handle error
     }
+
+    printf("Vault Name: %s\n",vault_filename);
+    printf("RAM memory used: %lld MB\n",(total_memory/1024/1024));
+    printf("Totl vault size: %zu MB\n",(available_space/1024/1024));
+
     srand((unsigned int)time(NULL)); 
 
     printf("fopen()...\n");
-    FILE *file = fopen("plot.memo", "wb"); // Open for appending
+    FILE *file = fopen(vault_filename, "wb"); // Open for appending
     if (file == NULL)
     {
         perror("Error opening file");
         return 1;
     }
 
+    long int nonce = 0;
     long int NONCE = 0;
     printf("NUM_BUCKETS=%zu\n", NUM_BUCKETS);
     printf("CUP_SIZE=%zu\n", CUP_SIZE);
@@ -67,7 +137,7 @@ int main()
     printf("total memory needed (GB): %f\n", memSize);
     float diskSize = 1.0 * MAX_HASHES * sizeof(struct hashObject) / (1024.0 * 1024 * 1024);
     printf("total disk needed (GB): %f\n", diskSize);
-
+    
     printf("fseeko()...\n");
     // Seek past the end of the file
     long long desiredFileSize = BUCKET_SIZE_MUTIPLIER * NUM_BUCKETS * sizeof(struct hashObject);
@@ -135,9 +205,11 @@ int main()
 
     clock_t start_time = clock();
 
+    size_t ideal_number_of_flushes = NUM_BUCKETS * (BUCKET_SIZE/CUP_SIZE);
+    printf("Ideal number of flushes = %ld\n",ideal_number_of_flushes);
     printf("starting workload...\n");
-    for (size_t i = 0; i < MAX_HASHES; i++)
-    // for (unsigned int i = 0; i < 1000; i++)
+
+    while(totalFlushes!=ideal_number_of_flushes)
     {
         if (DEBUG)
             printf("generateRandomByteArray()...\n");
@@ -211,44 +283,6 @@ int main()
         }
     }
 
-    printf("Completed generating hashes\n");
-
-    for (size_t i = 0; i < NUM_BUCKETS; i++)
-    {
-        if ( bucketFlush[i] < (BUCKET_SIZE / CUP_SIZE) ) {
-            clock_t start_write = clock();
-
-            long write_location = i * (BUCKET_SIZE_MUTIPLIER * sizeof(struct hashObject)) + bucketFlush[i] * bytes_to_write;
-            if (fseeko(file, write_location, SEEK_SET) != 0)
-            {
-                perror("Error seeking in file");
-                fclose(file);
-                return 1;
-            }
-            size_t bytesWritten = fwrite(array2D[i], 1, bytes_to_write, file);
-            if (bytesWritten != bytes_to_write)
-            {
-                perror("Error writing to file");
-                printf("fwrite()... %lu %zu %lu %i %zu\n", write_location, i, bytes_to_write, bucketFlush[i], bytesWritten);
-                fclose(file);
-                return 1;
-            }
-
-            // fflush(file);
-
-            totalFlushes++;
-            bucketFlush[i]++;
-            bucketIndex[i] = 0;
-
-            clock_t end_write = clock();
-            write_time += (double)(end_write - start_write) / CLOCKS_PER_SEC;
-
-            if ( (int)(totalFlushes % 32768) == 0 ) {
-                printf("Flushed : %zu\n", totalFlushes);
-            }
-        }
-    }
-    
 
     printf("finished workload...\n");
 
@@ -283,4 +317,6 @@ int main()
     printf("all done!\n");
 
     return 0;
+
+
 }
