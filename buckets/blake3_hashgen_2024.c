@@ -232,6 +232,9 @@ int main(int argc, char *argv[])
         array2D[prefix][bIndex].value = NONCE;
         bucketIndex[prefix]++;
         NONCE++;
+
+        
+        
         // bucket is full, should write to disk
         if (bucketIndex[prefix] == CUP_SIZE)
         {
@@ -251,7 +254,13 @@ int main(int argc, char *argv[])
                 fclose(file);
                 return 1;
             }
-            printf("Written cup for : %d\n",prefix);
+            // printf("Written cup for : %d\n",prefix);
+            if(totalFlushes%64 == 0)
+            {
+                clock_t output_time = clock();
+                double elapsed_output_time = (double)(output_time - start_time) / CLOCKS_PER_SEC;
+                printf("Flushed: %zu in %lf sec %f%% => %f MB/sec\n",totalFlushes,elapsed_output_time,((totalFlushes/ideal_number_of_flushes)*1.0),((totalFlushes*CUP_SIZE*sizeof(struct hashObject)/1024/1024)/elapsed_output_time));
+            }
             // Write the buffer to the file
             // long writeLocation = prefix+bucketFlush[prefix]*bytes_to_write;
             if (DEBUG)
