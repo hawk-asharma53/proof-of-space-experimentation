@@ -5,8 +5,27 @@
 #include <math.h>
 #include <stdbool.h>
 #include <time.h>
-#include "common.c"
+// #include "common.c"
 #include <math.h>
+
+#define HASH_SIZE 10
+#define PREFIX_SIZE 2
+
+struct hashObject
+{
+    char byteArray[HASH_SIZE - PREFIX_SIZE];
+    long long value;
+};
+
+void printArray(unsigned char byteArray[HASH_SIZE], int arraySize)
+{
+    printf("printArray(): ");
+    for (size_t i = 0; i < arraySize; i++)
+    {
+        printf("%02x ", byteArray[i]); // Print each byte in hexadecimal format
+    }
+    printf("\n");
+}
 
 bool DEBUG = false;
 
@@ -76,6 +95,15 @@ int cmpfunc(const void* a, const void* b) {
     if (diff > 0) return 1;
     return 0;
 }
+const size_t NUM_BUCKETS = 1 << (PREFIX_SIZE * 8);
+
+const int SEARCH_COUNT = 1000;
+const size_t BUCKET_SIZE = 68719476736 / sizeof(struct hashObject) / NUM_BUCKETS;
+const size_t SORT_SIZE = 128; //In MB
+const size_t MAX_HASHES_SORTABLE = (SORT_SIZE * 1024 * 1024) / sizeof(struct hashObject);
+const size_t HASHES_PER_CHUNK_SORT = BUCKET_SIZE < MAX_HASHES_SORTABLE ? BUCKET_SIZE : MAX_HASHES_SORTABLE; 
+
+
 
 int main() {
 
@@ -113,7 +141,7 @@ int main() {
 
     fclose(file);
 
-    file = fopen("plot.memo", "rb");
+    file = fopen("vault.memo", "rb");
     if (file == NULL) {
         perror("Error opening file");
         return 1;

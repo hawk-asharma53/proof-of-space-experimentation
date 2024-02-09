@@ -4,9 +4,31 @@
 #include <string.h>
 #include <math.h>
 #include <stdbool.h>
-#include "common.c"
+// #include "common.c"
 
+#define HASH_SIZE 10
+#define PREFIX_SIZE 2
+
+struct hashObject
+{
+    char byteArray[HASH_SIZE - PREFIX_SIZE];
+    long long value;
+};
+const int SEARCH_COUNT = 1000;
+const size_t NUM_BUCKETS = 1 << (PREFIX_SIZE * 8);
 bool DEBUG = false;
+const size_t BUCKET_SIZE = 68719476736 / sizeof(struct hashObject) / NUM_BUCKETS;
+const size_t BUCKET_SIZE_MUTIPLIER = BUCKET_SIZE * 1;
+
+void printArray(unsigned char byteArray[HASH_SIZE], int arraySize)
+{
+    printf("printArray(): ");
+    for (size_t i = 0; i < arraySize; i++)
+    {
+        printf("%02x ", byteArray[i]); // Print each byte in hexadecimal format
+    }
+    printf("\n");
+}
 
 int main()
 {
@@ -14,7 +36,7 @@ int main()
 
     long index = 0;
 
-    FILE *file = fopen("plot.memo", "rb"); // Open for appending
+    FILE *file = fopen("vault.memo", "rb"); // Open for appending
     if (file == NULL)
     {
         perror("Error opening file");
